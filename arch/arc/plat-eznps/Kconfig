@@ -1,0 +1,16 @@
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+
+menuconfig ARC_PLAT_EZNPS
+        bool "\"EZchip\" ARC dev platform"
+        select CMDLINE_UBOOT
+        select CPU_BIG_ENDIAN
+        select EZNPS_NET if ETHERNET
+        select ARC_HAS_COH_CACHES if SMP
+	select ARC_HAS_COH_RTSC if SMP
+        help
+          Support for ARC development platforms, provided by EZchip.
+          These are based on FPGA or nSIM. e.g.
+          - HE0
+          - HE1
+          - MetaWare nSIM
