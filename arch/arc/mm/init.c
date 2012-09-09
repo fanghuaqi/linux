@@ -10,6 +10,9 @@
 #include <linux/mm.h>
 #include <linux/bootmem.h>
 #include <linux/memblock.h>
+#ifdef CONFIG_BLK_DEV_INITRD
+#include <linux/initrd.h>
+#endif
 #include <linux/swap.h>
 #include <linux/module.h>
 #include <asm/page.h>
@@ -41,6 +44,33 @@ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
 	arc_mem_sz = size & PAGE_MASK;
 	pr_info("Memory size set via devicetree %ldM\n", TO_MB(arc_mem_sz));
 }
+
+#ifdef CONFIG_BLK_DEV_INITRD
+static void __init reserve_initrd_mem(void)
+{
+	unsigned long size = initrd_end - initrd_start;
+
+	if (size > 0)
+		memblock_reserve(__pa(initrd_start), size);
+}
+
+static int __init rd_start_early(char *p)
+{
+	unsigned long start = memparse(p, &p);
+
+	initrd_start = start;
+	initrd_end += start;
+	return 0;
+}
+early_param("rd_start", rd_start_early);
+
+static int __init rd_size_early(char *p)
+{
+	initrd_end += memparse(p, &p);
+	return 0;
+}
+early_param("rd_size", rd_size_early);
+#endif
 
 /*
  * First memory setup routine called from setup_arch()
@@ -80,6 +110,10 @@ void __init setup_arch_memory(void)
 	memblock_reserve(CONFIG_LINUX_LINK_BASE,
 			 __pa(_end) - CONFIG_LINUX_LINK_BASE);
 
+#ifdef CONFIG_BLK_DEV_INITRD
+	/*------------- reserve initrd image -----------------------*/
+        reserve_initrd_mem();
+#endif
 	memblock_dump_all();
 
 	/*-------------- node setup --------------------------------*/
