@@ -10,3 +10,4 @@ KBUILD_CFLAGS	+= -Iarch/arc/plat-arcfpga/include
 
 obj-y := platform.o irq.o
 obj-$(CONFIG_SMP)		+= smp.o
+obj-$(CONFIG_ARC_IDE)		+= arc_ide.o

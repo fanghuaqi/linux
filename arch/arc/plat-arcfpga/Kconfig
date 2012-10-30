@@ -81,4 +81,19 @@ config BVCI_LAT_CYCLES
 	default "30"
 	depends on ARC_HAS_BVCI_LAT_UNIT
 
+config ARC_IDE
+	tristate "Enable ARC IDE"
+	select HAVE_IDE
+	select IDE
+	select BLK_DEV_IDE
+	select BLK_DEV_IDEDISK
+	depends on ARC_BOARD_ANGEL4
+	default y
+
+config ARC_BLK_DEV_IDEDMA
+	bool "ARC IDE DMA support"
+	default y
+	select BLK_DEV_IDEDMA
+	depends on ARC_IDE
+
 endif
