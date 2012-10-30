@@ -26,4 +26,17 @@
 
 #define PS2_BASE_ADDR		0xC0FCC000
 
+#if 0
+#include <linux/init.h>
+
+#define printk_init(fmt, ...)			\
+({							\
+	static const __initconst char __fmt[] = fmt;	\
+	pr_info(__fmt, ##__VA_ARGS__);				\
+})
+
+#else
+#define printk_init(fmt, ...)   pr_info(fmt, ##__VA_ARGS__)
+#endif
+
 #endif
