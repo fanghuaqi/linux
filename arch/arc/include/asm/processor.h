@@ -139,7 +139,13 @@ extern unsigned int get_wchan(struct task_struct *p);
  */
 #define TASK_SIZE	(PAGE_OFFSET - VMALLOC_SIZE - USER_KERNEL_GUTTER)
 
-#define STACK_TOP       TASK_SIZE
+/* 1M for CMEM (0x57F00000:0x57FFFFFF)
+ * 128M for 16 FMT slots (0x58000000:0x5FFFFFFF)
+ * Marks how much space to reserve before STACK_TOP
+ */
+#define PLAT_RESERVED_GUTTER    0x08100000
+
+#define STACK_TOP       (TASK_SIZE - PLAT_RESERVED_GUTTER)
 #define STACK_TOP_MAX   STACK_TOP
 
 /* This decides where the kernel will search for a free chunk of vm
