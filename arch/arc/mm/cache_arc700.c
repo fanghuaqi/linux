@@ -172,7 +172,10 @@ void arc_cache_init(void)
 	unsigned int cpu = smp_processor_id();
 	struct cpuinfo_arc_cache *ic = &cpuinfo_arc700[cpu].icache;
 	struct cpuinfo_arc_cache *dc = &cpuinfo_arc700[cpu].dcache;
-	unsigned int dcache_does_alias, temp;
+	unsigned int temp;
+#ifdef CONFIG_ARC_HAS_DCACHE
+	unsigned int dcache_does_alias;
+#endif
 	char str[256];
 
 	printk(arc_cache_mumbojumbo(0, str, sizeof(str)));
@@ -458,10 +461,29 @@ static inline void __ic_entire_inv(void)
 	read_aux_reg(ARC_REG_IC_CTRL);	/* blocks */
 }
 
+struct ic_line_inv_vaddr_ipi {
+	unsigned long paddr;
+	unsigned long vaddr;
+	int sz;
+};
+
+static void ___ic_line_inv_vaddr_local(void *info)
+{
+        struct ic_line_inv_vaddr_ipi *ic_inv = (struct ic_line_inv_vaddr_ipi*) info;
+        __ic_line_inv_vaddr(ic_inv->paddr, ic_inv->vaddr, ic_inv->sz);
+}
+
+static void ___ic_line_inv_vaddr(unsigned long paddr, unsigned long vaddr,
+				unsigned long sz)
+{
+	struct ic_line_inv_vaddr_ipi ic_inv = { paddr, vaddr , sz};
+	on_each_cpu(___ic_line_inv_vaddr_local, &ic_inv, 1);
+}
 #else
 
 #define __ic_entire_inv()
 #define __ic_line_inv_vaddr(pstart, vstart, sz)
+#define ___ic_line_inv_vaddr(pstart, vstart, sz)
 
 #endif /* CONFIG_ARC_HAS_ICACHE */
 
@@ -606,12 +628,8 @@ void flush_icache_range(unsigned long kstart, unsigned long kend)
  */
 void __sync_icache_dcache(unsigned long paddr, unsigned long vaddr, int len)
 {
-	unsigned long flags;
-
-	local_irq_save(flags);
-	__ic_line_inv_vaddr(paddr, vaddr, len);
+	___ic_line_inv_vaddr(paddr, vaddr, len);
 	__dc_line_op(paddr, vaddr, len, OP_FLUSH_N_INV);
-	local_irq_restore(flags);
 }
 
 /* wrapper to compile time eliminate alignment checks in flush loop */
