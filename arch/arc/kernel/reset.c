@@ -10,6 +10,7 @@
 #include <linux/printk.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
+#include <linux/io.h>
 
 void machine_halt(void)
 {
@@ -20,13 +21,18 @@ void machine_halt(void)
 void machine_restart(char *__unused)
 {
 	/* Soft reset : jump to reset vector */
-	pr_info("Put your restart handler here\n");
+	if ((readl((void *)0xff106060) & 0xFF0000) > 0)
+		writel(0x7, (void *)0xff101044);
+
+	pr_info("WARNING: TB100 soft reboot may corrupt flash. Not restarting.\n");
 	machine_halt();
 }
 
 void machine_power_off(void)
 {
-	/* FIXME ::  power off ??? */
+	if (pm_power_off)
+		pm_power_off();
+
 	machine_halt();
 }
 
