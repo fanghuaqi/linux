@@ -453,6 +453,12 @@ config SPI_TEGRA114
 	  is different than the older SoCs SPI controller and also register interface
 	  get changed with this controller.
 
+config SPI_TB100
+	tristate "Abilis TB100 SPI controller"
+	depends on ARC && HAVE_CLK
+	help
+	  SPI driver for Abilis TB100 SoCs
+
 config SPI_TEGRA20_SFLASH
 	tristate "Nvidia Tegra20 Serial flash Controller"
 	depends on ARCH_TEGRA || COMPILE_TEST
