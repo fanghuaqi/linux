@@ -1,0 +1,34 @@
+* Abilis TB10x GPIO controller
+
+Required Properties:
+- compatible: Should be "abilis,tb10x-gpio"
+- reg: Address and length of the register set for the device
+- gpio-controller: Marks the device node as a gpio controller.
+- #gpio-cells: Should be <1>;
+- gpio-base: GPIO pin index of the first GPOI managed by this controller.
+- gpio-pins: Pointer to the pin configuration node inside an
+  "abilis,tb10x-iomux"-compatible pin controller this GPIO controller is
+  managing.
+
+Optional Properties:
+- interrupt-controller: Marks the device node as an interrupt controller.
+- #interrupt-cells: Should be <1>.
+- interrupts: Defines the interrupt line connecting this GPIO controller to
+  its parent interrupt controller.
+- interrupt-parent: Defines the parent interrupt controller.
+
+Example:
+
+gpioa: gpio@FF140000 {
+	compatible = "abilis,tb10x-gpio";
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	interrupt-parent = <&tb10x_ictl>;
+	interrupts = <27 1>;
+	reg = <0xFF140000 0x1000>;
+	gpio-controller;
+	#gpio-cells = <1>;
+	gpio-count = <3>;
+	gpio-base  = <0>;
+	gpio-pins = <&pctl_gpio_a>;
+};

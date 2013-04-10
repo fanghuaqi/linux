@@ -33,3 +33,8 @@ menuconfig ARC_PLAT_TB10X
 config PINCTRL_TB10X
 	def_bool y
 	depends on ARC_PLAT_TB10X
+
+# drivers/gpio/Kconfig
+config GPIO_TB10X
+	def_bool y
+	depends on PINCTRL_TB10X
