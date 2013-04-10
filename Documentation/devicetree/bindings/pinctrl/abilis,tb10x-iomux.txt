@@ -1,0 +1,92 @@
+Abilis Systems TB10x pin controller
+===================================
+
+Required properties
+-------------------
+
+- #address-cells: should be <1>.
+- #size-cells: should be <1>;
+- compatible: should be "abilis,tb10x-iomux";
+- reg: should contain the physical address and size of the pin controller's
+  register range.
+
+
+Port definitions
+----------------
+
+Ports are defined (and referenced) by sub-nodes of the pin controller. Every
+sub-node defines exactly one port (i.e. a set of pins). Ports are defined by
+their names in the pin controller driver.
+
+Required port definition subnode properties:
+  - pingrp: should be set to the name of the port's pin group.
+
+The following pin groups are available:
+  - GPIO ports: gpioa_pins, gpiob_pins, gpioc_pins, gpiod_pins, gpioe_pins,
+                gpiof_pins, gpiog_pins, gpioh_pins, gpioi_pins, gpioj_pins,
+                gpiok_pins, gpiol_pins, gpiom_pins, gpion_pins
+  - Serial TS input ports: mis0_pins, mis1_pins, mis2_pins, mis3_pins,
+                           mis4_pins, mis5_pins, mis6_pins, mis7_pins
+  - Parallel TS input ports: mip1_pins, mip3_pins, mip5_pins, mip7_pins
+  - Serial TS output ports: mos0_pins, mos1_pins, mos2_pins, mos3_pins
+  - Parallel TS output port: mop_pins
+  - CI+ port: ciplus_pins
+  - CableCard (Mcard) port: mcard_pins
+  - Smart card ports: stc0_pins, stc1_pins
+  - UART ports: uart0_pins, uart1_pins
+  - SPI ports: spi1_pins, spi3_pins
+  - JTAG: jtag_pins
+
+All other ports of the chip are not multiplexed and thus not managed by this
+driver.
+
+
+Pinmux driver control
+---------------------
+
+In case a driver requires a port to be mapped, the corresponding node should
+be compatible with "abilis,simple-pinctrl" and define a pinctrl state named
+"abilis,simple-default" pointing to the port's respective node inside the pin
+controller. Drivers managing pin controller states internally can be
+configured normally as described in the pinctrl-bindings.txt.
+
+The pinmux driver is connected to the TB10x GPIO driver in a way that a GPIO
+node managing a GPIO port can point to the respective pinmux subnode using
+the gpio-pins property
+
+
+Example
+-------
+
+iomux: iomux@FF10601c {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "abilis,tb10x-iomux";
+	reg = <0xFF10601c 0x4>;
+	pctl_gpio_a: pctl-gpio-a {
+		pingrp = "gpioa_pins";
+	};
+	pctl_uart0: pctl-uart0 {
+		pingrp = "uart0_pins";
+	};
+};
+uart@FF100000 {
+	compatible = "snps,dw-apb-uart",
+			"abilis,simple-pinctrl";
+	reg = <0xFF100000 0x100>;
+	clock-frequency = <166666666>;
+	interrupts = <25 1>;
+	reg-shift = <2>;
+	reg-io-width = <4>;
+	pinctrl-names = "abilis,simple-default";  /* <<<<<<<< */
+	pinctrl-0 = <&pctl_uart0>;                /* <<<<<<<< */
+};
+gpioa: gpio@FF140000 {
+	compatible = "abilis,tb10x-gpio";
+	reg = <0xFF140000 0x1000>;
+	gpio-controller;
+	#gpio-cells = <1>;
+	gpio-count = <3>;
+	gpio-base  = <0>;
+	gpio-pins = <&pctl_gpio_a>;               /* <<<<<<<< */
+};

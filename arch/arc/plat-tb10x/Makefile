@@ -17,5 +17,6 @@
 
 
 KBUILD_CFLAGS   += -Iarch/arc/plat-tb10x/include
+obj-$(CONFIG_PINCTRL_TB10X)	+= ../../../drivers/pinctrl/pinctrl-tb10x.o
 
 obj-y += tb10x.o
