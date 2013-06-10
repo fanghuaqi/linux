@@ -864,7 +864,7 @@ int mt29f_mtd_register(struct mt29f_flash *flash,
 {
 	struct mtd_info *mtd = mt29f_to_mtd(flash);
 
-	mtd->name = flash->info.model;
+	mtd->name = dev_name(&flash->spi->dev);
 	mtd->size = (flash->info.page_size * flash->info.pages_per_block *
 			flash->info.blocks_per_unit);
 
