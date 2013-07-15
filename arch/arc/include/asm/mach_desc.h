@@ -22,6 +22,7 @@
  * @name:		Board/SoC name
  * @dt_compat:		Array of device tree 'compatible' strings
  * 			(XXX: although only 1st entry is looked at)
+ * @init_cmdline:	Very early callback [called from setup_arch()]
  * @init_early:		Very early callback [called from setup_arch()]
  * @init_irq:		setup external IRQ controllers [called from init_IRQ()]
  * @init_smp:		for each CPU (e.g. setup IPI)
@@ -37,6 +38,7 @@ struct machine_desc {
 	const char		*name;
 	const char		**dt_compat;
 
+	void			(*init_cmdline)(char *);
 	void			(*init_early)(void);
 	void			(*init_irq)(void);
 #ifdef CONFIG_SMP

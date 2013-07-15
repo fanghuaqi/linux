@@ -326,6 +326,10 @@ void __init setup_arch(char **cmdline_p)
 	strlcat(boot_command_line, command_line, COMMAND_LINE_SIZE);
 #endif
 
+	/* Platform/board specific: e.g. retrieve from nSim */
+	if (machine_desc->init_cmdline)
+		machine_desc->init_cmdline(boot_command_line);
+
 	/* Save unparsed command line copy for /proc/cmdline */
 	*cmdline_p = boot_command_line;
 
