@@ -12,7 +12,7 @@
 #include <linux/types.h>
 #include <uapi/asm/setup.h>
 
-#define COMMAND_LINE_SIZE 256
+#define COMMAND_LINE_SIZE 512
 
 /*
  * Data structure to map a ID to string
