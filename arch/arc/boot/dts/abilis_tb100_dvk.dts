@@ -44,6 +44,43 @@
 			phy-mode = "rgmii";
 		};
 
+		spi0: spi@0xFE010000 {
+			spi_flash@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "m25p80";
+				reg = <0>;
+				spi-max-frequency = <32000000>;
+				spi-cpol;
+				spi-cpha;
+
+				partition@0 {
+					label = "tb100-env";
+					reg = <0x0 0x10000>;
+				};
+				partition@10000 {
+					label = "uboot-0";
+					reg = <0x10000 0x30000>;
+				};
+				partition@40000 {
+					label = "uboot-1";
+					reg = <0x40000 0x40000>;
+				};
+				partition@080000 {
+					label = "uimage-0";
+					reg = <0x080000 0xC00000>;
+				};
+				partition@C80000 {
+					label = "uimage-1";
+					reg = <0xC80000 0xC00000>;
+				};
+				partition@1880000 {
+					label = "userdata";
+					reg = <0x1880000 0x780000>;
+				};
+			};
+		};
+
 		i2c0: i2c@FF120000 {
 			i2c-sda-hold-time-ns = <432>;
 		};

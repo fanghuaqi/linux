@@ -19,5 +19,6 @@
 KBUILD_CFLAGS   += -Iarch/arc/plat-tb10x/include
 obj-$(CONFIG_PINCTRL_TB10X)	+= ../../../drivers/pinctrl/pinctrl-tb10x.o
 obj-$(CONFIG_GPIO_TB10X)	+= ../../../drivers/gpio/gpio-tb10x.o
+obj-$(CONFIG_SPI_TB100)		+= ../../../drivers/spi/spi-tb100.o
 
 obj-y += tb10x.o

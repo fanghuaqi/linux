@@ -38,3 +38,11 @@ config PINCTRL_TB10X
 config GPIO_TB10X
 	def_bool y
 	depends on PINCTRL_TB10X
+
+# drivers/spi/Kconfig
+config SPI_TB100
+	tristate "Abilis TB100 SPI controller"
+	depends on ARC && HAVE_CLK
+	default n
+	help
+	  SPI driver for Abilis TB100 SoCs
