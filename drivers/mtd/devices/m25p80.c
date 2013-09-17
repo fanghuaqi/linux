@@ -86,6 +86,7 @@
 
 struct m25p {
 	struct spi_device	*spi;
+	struct flash_info	*info;
 	struct mutex		lock;
 	struct mtd_info		mtd;
 	u16			page_size;
@@ -992,6 +993,7 @@ static int m25p_probe(struct spi_device *spi)
 		return -ENOMEM;
 
 	flash->spi = spi;
+	flash->info = info;
 	mutex_init(&flash->lock);
 	spi_set_drvdata(spi, flash);
 
@@ -1119,6 +1121,14 @@ static int m25p_probe(struct spi_device *spi)
 			data ? data->nr_parts : 0);
 }
 
+void m25p_shutdown(struct spi_device *spi)
+{
+	struct m25p	*flash = dev_get_drvdata(&spi->dev);
+
+	/* exit 4byte addressing mode if enabled */
+	if ((flash->mtd.size > 0x1000000) && (flash->addr_width == 4))
+		set_4byte(flash, flash->info->jedec_id, 0);
+}
 
 static int m25p_remove(struct spi_device *spi)
 {
@@ -1137,6 +1147,7 @@ static struct spi_driver m25p80_driver = {
 	.id_table	= m25p_ids,
 	.probe	= m25p_probe,
 	.remove	= m25p_remove,
+	.shutdown = m25p_shutdown,
 
 	/* REVISIT: many of these chips have deep power-down modes, which
 	 * should clearly be entered on suspend() to minimize power use.
