@@ -99,6 +99,8 @@
 			interrupt-names = "macirq";
 			clocks = <&ahb_clk>;
 			clock-names = "stmmaceth";
+			snps,fixed-burst;
+			snps,pbl = <2>;
 		};
 		dma@FE000000 {
 			compatible = "snps,dma-spear1340";
