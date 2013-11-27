@@ -148,22 +148,18 @@ static void he1_eznps_smp_wakeup_cpu(int cpu, unsigned long pc)
 	__raw_writel(cpu_cfg_value, cpu_cfg_reg);
 }
 
-static void eznps_ipi_send(void *p)
+static void eznps_ipi_send(int cpu)
 {
-	const struct cpumask *callmap = p;
-	unsigned int cpu, this_cpu = smp_processor_id();
+	unsigned int this_cpu = smp_processor_id();
 
-	for_each_cpu(cpu, callmap) {
-		__raw_writel((1 << cpu), REGS_CPU_IPI(this_cpu));
-		__raw_writel(0, REGS_CPU_IPI(this_cpu));
-	}
+	__raw_writel((1 << cpu), REGS_CPU_IPI(this_cpu));
+	__raw_writel(0, REGS_CPU_IPI(this_cpu));
 }
 
-static void he1_eznps_ipi_send(void *p)
+static void he1_eznps_ipi_send(int cpu)
 {
-	const struct cpumask *callmap = p;
-	unsigned int cpu, reg_value = 0;
-	for_each_cpu(cpu, callmap) {
+	unsigned int reg_value = 0;
+
 		reg_value  = (NPS_CPU_TO_THREAD_NUM(cpu));
 		reg_value |= (NPS_CPU_TO_CORE_NUM(cpu) << 8);
 		reg_value |= (NPS_CPU_TO_CLUSTER(cpu) << 16);
@@ -176,10 +172,9 @@ static void he1_eznps_ipi_send(void *p)
 				: "r"(reg_value)
 				: "r3"
 		);
-	}
 }
 
-static void eznps_ipi_clear(int cpu, int irq)
+static void eznps_ipi_clear(int irq)
 {
 	write_aux_reg(AUX_IPULSE, (1 << irq));
 }
