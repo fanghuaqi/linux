@@ -42,6 +42,11 @@ extern const char *arc_platform_smp_cpuinfo(void);
 extern int smp_ipi_irq_setup(int cpu, int irq);
 
 /*
+ * API expected BY platform to manipulate ienable register
+ */
+void smp_send_ienable(unsigned int irq, bool do_set);
+
+/*
  * struct plat_smp_ops	- SMP callbacks provided by platform to ARC SMP
  *
  * @info:		SoC SMP specific info for /proc/cpuinfo etc

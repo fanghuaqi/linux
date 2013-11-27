@@ -201,7 +201,8 @@ enum ipi_msg_type {
 	IPI_EMPTY = 0,
 	IPI_RESCHEDULE = 1,
 	IPI_CALL_FUNC,
-	IPI_CPU_STOP
+	IPI_CPU_STOP,
+	IPI_IENABLE,
 };
 
 /*
@@ -211,6 +212,10 @@ enum ipi_msg_type {
  */
 
 static DEFINE_PER_CPU(unsigned long, ipi_data);
+
+static DEFINE_SPINLOCK(ipi_ienable_lock);
+static unsigned long ipi_ienable_reset;
+static unsigned long ipi_ienable_set;
 
 static void ipi_send_msg_one(int cpu, enum ipi_msg_type msg)
 {
@@ -248,6 +253,53 @@ static void ipi_send_msg(const struct cpumask *callmap, enum ipi_msg_type msg)
 
 	for_each_cpu(cpu, callmap)
 		ipi_send_msg_one(cpu, msg);
+}
+
+static void ipi_ienable (void)
+{
+	unsigned int ienb;
+	unsigned long flags;
+
+	ienb = read_aux_reg(AUX_IENABLE);
+	spin_lock_irqsave(&ipi_ienable_lock, flags);
+	ienb |= ipi_ienable_set;
+	ienb &= ~ipi_ienable_reset;
+	spin_unlock_irqrestore(&ipi_ienable_lock, flags);
+	write_aux_reg(AUX_IENABLE, ienb);
+}
+
+static void smp_send_ipi_ienable(void)
+
+{
+	int cpu;
+
+	for_each_online_cpu(cpu)
+	{
+		if (cpu == smp_processor_id())
+			ipi_ienable();
+		else
+			ipi_send_msg(cpumask_of(cpu), IPI_IENABLE);
+	}
+}
+
+void smp_send_ienable(unsigned int irq, bool do_set)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&ipi_ienable_lock, flags);
+	if (do_set)
+	{
+		set_bit(irq, &ipi_ienable_set);
+		clear_bit(irq, &ipi_ienable_reset);
+	}
+	else
+	{
+		set_bit(irq, &ipi_ienable_reset);
+		clear_bit(irq, &ipi_ienable_set);
+	}
+	spin_unlock_irqrestore(&ipi_ienable_lock, flags);
+
+	smp_send_ipi_ienable();
 }
 
 void smp_send_reschedule(int cpu)
@@ -294,6 +346,10 @@ static inline void __do_IPI(unsigned long msg)
 
 	case IPI_CPU_STOP:
 		ipi_cpu_stop();
+		break;
+
+	case IPI_IENABLE:
+		ipi_ienable();
 		break;
 
 	default:
