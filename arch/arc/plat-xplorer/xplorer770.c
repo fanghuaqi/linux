@@ -126,6 +126,28 @@ static void xplorer770_set_memmap(void __iomem *base, const int memmap[16][2])
 	iowrite32(slave_offset >> 32,		base + 0xC);
 }
 
+static int wait_cgu_lock(void __iomem *lock_reg, uint32_t val)
+{
+	unsigned long timeout = jiffies + msecs_to_jiffies(100);
+	while ((ioread32(lock_reg) & 1) == val) {
+		if (time_after(jiffies, timeout))
+			return -EBUSY;
+		cpu_relax();
+	}
+	return 0;
+}
+
+static int write_cgu_reg(uint32_t value, void __iomem *reg,
+			 void __iomem *lock_reg)
+{
+	int retval = 0;
+	iowrite32(value, reg);
+	retval |= wait_cgu_lock(lock_reg, 1);	/* wait for unlock */
+	retval |= wait_cgu_lock(lock_reg, 0);	/* wait for re-lock */
+	return retval;
+}
+
+
 static void xplorer770_early_init(void)
 {
 	int i;
