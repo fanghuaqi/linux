@@ -8,9 +8,7 @@
 
 #include <linux/slab.h>
 #include <linux/module.h>
-#define DEBUG
 #include <linux/i2c.h>
-#undef DEBUG
 #include <linux/regmap.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -28,6 +26,7 @@ static const struct reg_default adv7511_fixed_registers[] = {
 	{ 0xe0, 0xd0 },
 	{ 0xf9, 0x00 },
 	{ 0x55, 0x02 },
+	{ 0xd6, 0xc0 }, /* MJ ignore HPD pin */
 };
 
 
@@ -69,29 +68,28 @@ static void adv7511_set_link_config(struct adv7511 *adv7511,
 	enum adv7511_input_sync_pulse sync_pulse;
 
 	switch (config->id) {
-		case ADV7511_INPUT_ID_12_15_16BIT_RGB444_YCbCr444:
-			sync_pulse = ADV7511_INPUT_SYNC_PULSE_NONE;
-			break;
-		default:
-			sync_pulse = config->sync_pulse;
-			break;
+	case ADV7511_INPUT_ID_12_15_16BIT_RGB444_YCbCr444:
+		sync_pulse = ADV7511_INPUT_SYNC_PULSE_NONE;
+		break;
+	default:
+		sync_pulse = config->sync_pulse;
+		break;
 	}
 
 	switch (config->id) {
-		case ADV7511_INPUT_ID_16_20_24BIT_YCbCr422_EMBEDDED_SYNC:
-		case ADV7511_INPUT_ID_8_10_12BIT_YCbCr422_EMBEDDED_SYNC:
-			adv7511->embedded_sync = true;
-			break;
-		default:
-			adv7511->embedded_sync = false;
-			break;
+	case ADV7511_INPUT_ID_16_20_24BIT_YCbCr422_EMBEDDED_SYNC:
+	case ADV7511_INPUT_ID_8_10_12BIT_YCbCr422_EMBEDDED_SYNC:
+		adv7511->embedded_sync = true;
+		break;
+	default:
+		adv7511->embedded_sync = false;
+		break;
 	}
 
 	regmap_update_bits(adv7511->regmap, ADV7511_REG_I2C_FREQ_ID_CFG,
 		0xf, config->id);
 	regmap_update_bits(adv7511->regmap, ADV7511_REG_VIDEO_INPUT_CFG1, 0x7e,
 		(config->input_color_depth << 4) | (config->input_style << 2));
-#if 0
 	regmap_write(adv7511->regmap, ADV7511_REG_VIDEO_INPUT_CFG2,
 		(config->reverse_bitorder << 6) |
 		(config->bit_justification << 3));
@@ -100,16 +98,20 @@ static void adv7511_set_link_config(struct adv7511 *adv7511,
 		(config->timing_gen_seq << 1));
 	regmap_write(adv7511->regmap, 0xba,
 		(config->clock_delay << 5));
+
 	regmap_update_bits(adv7511->regmap, ADV7511_REG_TMDS_CLOCK_INV,
 		0x08, config->tmds_clock_inversion << 3);
-#endif
 	/* 0x17[1] = 1, aspect ratio = 16:9*/
 	regmap_update_bits(adv7511->regmap, ADV7511_REG_VIDEO_INPUT_CFG2, 
 		ADV7511_ASPECT_RATIO_MASK, ADV7511_ASPECT_RATIO_16_9);
 
-	/* enable HDMI mode */
-	regmap_update_bits(adv7511->regmap, ADV7511_REG_HDCP_HDMI_CFG, 
-		ADV7511_HDMI_CFG_MODE_MASK, ADV7511_HDMI_CFG_MODE_HDMI);
+	/* enable DVI mode */
+	regmap_update_bits(adv7511->regmap, ADV7511_REG_HDCP_HDMI_CFG,
+			   ADV7511_HDMI_CFG_MODE_MASK,
+			   ADV7511_HDMI_CFG_MODE_DVI);
+
+	adv7511->hsync_polarity = config->hsync_polarity;
+	adv7511->vsync_polarity = config->vsync_polarity;
 }
 
 
@@ -134,17 +136,15 @@ static void adv7511_read_config(struct adv7511 *adv7511)
 	}
 
 	for (i = 0; i < 16; i++) {
-		dev_dbg(&adv7511->i2c_main->dev, "0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x \
-0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n", 
-		adv7511->edid_buf[0+i*16], adv7511->edid_buf[1+i*16],
-		adv7511->edid_buf[2+i*16], adv7511->edid_buf[3+i*16],
-		adv7511->edid_buf[4+i*16], adv7511->edid_buf[5+i*16],
-		adv7511->edid_buf[6+i*16], adv7511->edid_buf[7+i*16],
-		adv7511->edid_buf[8+i*16], adv7511->edid_buf[9+i*16],
-		adv7511->edid_buf[10+i*16], adv7511->edid_buf[11+i*16],
-		adv7511->edid_buf[12+i*16], adv7511->edid_buf[13+i*16],
-		adv7511->edid_buf[14+i*16], adv7511->edid_buf[15+i*16]
-		);
+		dev_dbg(&adv7511->i2c_main->dev, "%1x   %2.2x %2.2x %2.2x %2.2x | %2.2x %2.2x %2.2x %2.2x | %2.2x %2.2x %2.2x %2.2x | %2.2x %2.2x %2.2x %2.2x\n",
+			i, adv7511->edid_buf[0+i*16], adv7511->edid_buf[1+i*16],
+			adv7511->edid_buf[2+i*16], adv7511->edid_buf[3+i*16],
+			adv7511->edid_buf[4+i*16], adv7511->edid_buf[5+i*16],
+			adv7511->edid_buf[6+i*16], adv7511->edid_buf[7+i*16],
+			adv7511->edid_buf[8+i*16], adv7511->edid_buf[9+i*16],
+			adv7511->edid_buf[10+i*16], adv7511->edid_buf[11+i*16],
+			adv7511->edid_buf[12+i*16], adv7511->edid_buf[13+i*16],
+			adv7511->edid_buf[14+i*16], adv7511->edid_buf[15+i*16]);
 	}
 }
 
@@ -394,7 +394,6 @@ static int adv7511_probe(struct i2c_client *i2c,
 		dev_dbg(&i2c->dev, "monitor connected");
 	} else {
 		dev_dbg(&i2c->dev, "no monitor connected");
-		return -EIO;
 	}
 	/* power up the chip */	
 	regmap_update_bits(adv7511->regmap, ADV7511_REG_POWER,
@@ -419,9 +418,11 @@ static int adv7511_probe(struct i2c_client *i2c,
 		return -ENOMEM;
 
 	dev_dbg(&i2c->dev, "irq. %d\n", i2c->irq);
+	/* CEC is unused for now */
+	regmap_write(adv7511->regmap, ADV7511_REG_CEC_CTRL,
+		ADV7511_CEC_CTRL_POWER_DOWN);
 
-	adv7511->current_edid_segment = 0;
-	//adv7511_get_edid_block(adv7511, 0);
+	adv7511->current_edid_segment = -1;
 
 	i2c_set_clientdata(i2c, adv7511);
 	
@@ -443,8 +444,6 @@ static int adv7511_remove(struct i2c_client *i2c)
 
 	i2c_unregister_device(adv7511->i2c_edid);
 
-	if (i2c->irq)
-		free_irq(i2c->irq, adv7511);
 
 	return 0;
 }
