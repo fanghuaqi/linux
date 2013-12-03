@@ -36,47 +36,15 @@
 #define PGU_CTRL_CONT_MASK      (0x1)
 #define PGU_CTRL_ENABLE_MASK    (0x2)
 #define PGU_CTRL_FORMAT_MASK    (0x4)
-#define PGU_CTRL_VS_POL_MASK    (0x8)
-#define PGU_CTRL_HS_POL_MASK    (0x10)
-#define PGU_CTRL_DE_POL_MASK    (0x20)
-#define PGU_CTRL_CLK_POL_MASK   (0x40)
-#define PGU_CTRL_CLK_HIGH_MASK  (0xff0000)
-#define PGU_CTRL_CLK_DIV_MASK   (0xff000000)
-#define PGU_CTRL_CLK_OFFSET	16
 
-#define GET_PGU_CTRL_CLK_HIGH_VAL(x) ((x & PGU_CTRL_CLK_HIGH_MASK) >> 16)
-#define SET_PGU_CTRL_CLK_HIGH_VAL(x, y) ((x & PGU_CTRL_CLK_HIGH_MASK) |\
-		((y << 16) & PGU_CTRL_CLK_DIV_MASK))
-
-#define PGU_STAT_ERR_MASK	(0x1)
 #define PGU_STAT_BUSY_MASK	(0x2)
-#define PGU_STAT_PENDING_MASK   (0x4)
-#define PGU_STAT_START_MASK	(0x18)
 
-#define PGU_FMT_Y_RES_MASK	0xfff
-#define PGU_FMT_X_RES_MASK	0xfff0000
-#define PGU_FMT_X_SHIFT         16
+#define CLK_CFG_REG_CLK_HIGH_MASK 0xff0000
+#define GET_CLK_CFG_REG_CLK_HIGH_VAL(x) ((x & CLK_CFG_REG_CLK_HIGH_MASK) >> 16)
+#define SET_CLK_CFG_REG_CLK_HIGH_VAL(x, y) ((x & !CLK_CFG_REG_CLK_HIGH_MASK) |\
+		((y << 16) & CLK_CFG_REG_CLK_HIGH_MASK))
 
-#define ENCODE_PGU_FMT(x, y) (((x * 0x10000) & PGU_FMT_X_RES_MASK)\
-	| (y & PGU_FMT_Y_RES_MASK))
-
-#define PGU_HSYNC_ACT_MASK	0xfff0000
-#define PGU_HSYNC_DEACT_MASK	0xfff
-#define ENCODE_PGU_HSYNC_TIM(x, y) (((x * 0x10000) &\
-	PGU_HSYNC_ACT_MASK) | (y & PGU_HSYNC_DEACT_MASK))
-
-#define PGU_VSYNC_ACT_MASK	0xfff0000
-#define PGU_VSYNC_DEACT_MASK	0xfff
-#define ENCODE_PGU_VSYNC_TIM(x, y) (((x * 0x10000) &\
-	PGU_VSYNC_ACT_MASK) | (y & PGU_VSYNC_DEACT_MASK))
-
-#define PGU_FRAME_HACT_MASK 0xfff0000
-#define PGU_FRAME_VACT_MASK 0xfff
-#define ENCODE_PGU_FRAME_TIM(x, y) (((x * 0x10000) & PGU_FRAME_HACT_MASK)\
-	| (y & PGU_FRAME_VACT_MASK))
-
-#define PGU_HSYNC_OFFSET	0x18
-#define PGU_VSYNC_OFFSET	0x20
+#define ENCODE_PGU_XY(x, y)	((((x) - 1) << 16) | ((y) - 1))
 
 /*---------------------------------------------------------------------------*/
 /* arc_pgu regs*/
@@ -111,20 +79,11 @@ struct arc_pgu_regs {
 
 /* display information */
 struct known_displays {
-	uint32_t xres;
-	uint32_t yres;
-	uint32_t bpp;
-	unsigned char display_name[256];
-	uint32_t control;
-	uint32_t clkcontrol;
-	uint32_t left_margin;
-	uint32_t upper_margin;
-	uint32_t hsync_start;
-	uint32_t hsync_end;
-	uint32_t vsync_start;
-	uint32_t vsync_end;
-	/* this value decides whether needs to dive clk */
-	uint32_t max_freq;
+	unsigned char	display_name[256];
+	unsigned	hres, hsync_start, hsync_end, htotal;
+	unsigned	vres, vsync_start, vsync_end, vtotal;
+	bool		hsync_polarity, vsync_polarity;
+	int		div;
 };
 
 /* parameters for arc pgu */
@@ -147,80 +106,28 @@ struct arcpgu_par {
 
 /* screen information */
 struct known_displays dw_displays[] = {
-	{ /* ARCPGU_DISPTYPE:0 Demo display */
-		640,		/* xres */
-		480,		/* yres */
-		16,		/* bpp  */
-		"Philips 640x480 color(16bpp) LCD monitor",
-		/* mode control */
-		(PGU_CTRL_VS_POL_MASK | PGU_CTRL_HS_POL_MASK),
-		(0x0100),	/* clkcontrol */
-		(10),		/* left margin */
-		(10),		/* upper margin*/
-		(0x0),		/* hsync start */
-		(0x6f),		/* hsync end */
-		(0x0),		/* vsync start */
-		(0xb),		/* vsync  end */
-		(15000000)	/* max_freq */
+	{
+		"Analog Device ADV7511 HDMI Transmitter 640x480@60, pixclk 25",
+		640, 656, 720, 816, 480, 481, 484, 516, false, true, 6
 	},
-	{ /* ARCPGU_DISPTYPE:1 Hitachi 640x480 TFT panel */
-		640,		/* xres */
-		480,		/* yres */
-		16,			/* bpp  */
-		"Hitachi TX14D11VM1CBA 640x480 colour(16bpp) LCD",
-		(0),		/* mode control */
-		(0x0102),	/* clkcontrol */
-		(10),		/* left margin */
-		(10),		/* upper margin*/
-		(0),		/* hsync start */
-		(0x04220180),	/* hsync end */
-		(0),		/* vsync start */
-		(0x010500fc),	/* vsync end */
-		(12000000)	/* max_freq */
+	{
+		"Analog Device ADV7511 HDMI Transmitter 1024x576@60, pixclk 50",
+		1024, 1064, 1176, 1360, 576, 577, 580, 617, false, true, 3
 	},
-#if 0
-	{ /* ARCPGU_DISPTYPE:2 ADV7511 Transmitter */
-		1024,		/* xres */
-		768,		/* yres */
-		16,			/* bpp  */
-		"Analog Device ADV7511 HDMI Transmitter",
-		(0),		/* mode control */
-		(0x0102),	/* clkcontrol */
-		(319),		/* left margin */
-		(37),		/* upper margin*/
-		(24),		/* hsync start */
-		(159),		/* hsync end */
-		(2),		/* vsync start */
-		(8),		/* vsync end */
-		(165000000)	/* max_freq */
-	}
-#endif
-	{ /* ARCPGU_DISPTYPE:2 ADV7511 Transmitter */
-		640,		/* xres */
-		480,		/* yres */
-		16,			/* bpp  */
-		"Analog Device ADV7511 HDMI Transmitter",
-		(0),		/* mode control */
-		(0x0102),	/* clkcontrol */
-		(159),		/* left margin */
-		(44),		/* upper margin*/
-		(15),		/* hsync start */
-		(111),		/* hsync end */
-		(9),		/* vsync start */
-		(11),		/* vsync end */
-		(25200000)	/* max_freq */
-	}
-
+	{
+		"Analog Device ADV7511 HDMI Transmitter 1280x720@30, pixclk 75",
+		1280, 1288, 1416, 1600, 720, 721, 724, 760, false, true, 2
+	},
 };
 
 /* the screen parameters that can be modified by the user */
 static struct fb_var_screeninfo arcpgufb_var = {
-	.xres =			640,
-	.yres =			480,
+	.xres =			1280,
+	.yres =			720,
 	.xoffset =		0,
 	.yoffset =		0,
-	.xres_virtual =		640,
-	.yres_virtual =		480,
+	.xres_virtual =		1280,
+	.yres_virtual =		720,
 /* RGB888 */
 /*
 	.bits_per_pixel =	24,
@@ -292,23 +199,28 @@ static int arcpgufb_set_par(struct fb_info *info)
 	struct arcpgu_par *par = info->par;
 
 	arcpgufb_disable(info);
-		/* Initialize controller */
-	xfmt = info->var.xres + info->var.left_margin;
-	yfmt = info->var.yres + info->var.upper_margin;
-		
-	iowrite32(ENCODE_PGU_FMT(xfmt, yfmt), &par->regs->fmt);
-	dev_info(info->dev, "FMT:%x", ioread32(&par->regs->fmt));
+	dev_dbg(info->dev, "display name %s, %dx%d\n",
+		par->display->display_name,
+		par->display->hres, par->display->vres);
 	
-	act = info->var.right_margin - info->var.hsync_len;
-	deact = info->var.right_margin;
-	iowrite32(ENCODE_PGU_HSYNC_TIM(act, deact), &par->regs->hsync);
+	iowrite32(ENCODE_PGU_XY(par->display->htotal, par->display->vtotal),
+		  &par->regs->fmt);
+	dev_dbg(info->dev, "FORMAT:%x\n", ioread32(&par->regs->fmt));
 
-	act = info->var.lower_margin - info->var.vsync_len;
-	deact = info->var.lower_margin;
-	iowrite32(ENCODE_PGU_VSYNC_TIM(act, deact), &par->regs->vsync);
+	iowrite32(ENCODE_PGU_XY(par->display->hsync_start - par->display->hres,
+				par->display->hsync_end - par->display->hres),
+		  &par->regs->hsync);
+	dev_dbg(info->dev, "HSYNC:%x\n", ioread32(&par->regs->hsync));
 
-	iowrite32(ENCODE_PGU_FRAME_TIM(info->var.left_margin,
-			info->var.upper_margin), &par->regs->frame);
+	iowrite32(ENCODE_PGU_XY(par->display->vsync_start - par->display->vres,
+				par->display->vsync_end - par->display->vres),
+		  &par->regs->vsync);
+	dev_dbg(info->dev, "VSYNC:%x\n", ioread32(&par->regs->hsync));
+
+	iowrite32(ENCODE_PGU_XY(par->display->htotal - par->display->hres,
+				par->display->vtotal - par->display->vres),
+		  &par->regs->frame);
+	dev_dbg(info->dev, "FRAME:%x\n", ioread32(&par->regs->frame));
 
 	iowrite32(par->fb_phys, &par->regs->base0);
 
@@ -323,10 +235,8 @@ static int arcpgufb_set_par(struct fb_info *info)
 
 	iowrite32(0, &par->regs->stride);	/* stride */
 
-	/* change ctrl according to  info->par, no fix mode */
-	/* RGB:555, continugous mode */
-	iowrite32(0x01000061, &par->regs->ctrl);
-	arcpgufb_enable(info);
+	/* RGB:555, continuous mode */
+	iowrite32((par->display->div - 1) << 24 | 0x63, &par->regs->ctrl);
 
 	/* start dma transfer for frame buffer 0  */
 	iowrite32(1, &par->regs->start_set);
@@ -399,38 +309,23 @@ static int arcpgufb_probe(struct platform_device *pdev)
 	par->display = &dw_displays[retval];
 
 	/* var setting according to display */
-	arcpgufb_var.xres = par->display->xres;
-	arcpgufb_var.xres_virtual = par->display->xres;
-	arcpgufb_var.yres = par->display->yres;
-	arcpgufb_var.yres_virtual = par->display->yres * CONFIG_ARCPGU_RGBBUFS;
-	arcpgufb_var.bits_per_pixel = par->display->bpp;
-	arcpgufb_var.left_margin = par->display->left_margin;
-	arcpgufb_var.upper_margin = par->display->upper_margin;
-	arcpgufb_var.hsync_len = par->display->hsync_end -
-			par->display->hsync_start;
-	arcpgufb_var.right_margin = par->display->hsync_end;
-	arcpgufb_var.vsync_len = par->display->vsync_end -
-			par->display->vsync_start;
-	arcpgufb_var.lower_margin = par->display->vsync_end;
-
 	/* only works for 8/16 bpp */
 	par->num_rgbbufs = CONFIG_ARCPGU_RGBBUFS;
-	par->line_length = par->display->xres
-		* par->display->bpp / 8;
+	par->line_length = par->display->hres * 16 / 8;
 	par->main_mode = 1;
 	par->overlay_mode = 1;
 	par->rgb_bufno = 0;
 	par->main_is_fb = 1;
-	par->cmap_len = (par->display->bpp == 8) ? 256 : 16;
-
+	par->cmap_len = 16;
 
 	par->regs = devm_request_and_ioremap(device, res);
 
 	dev_info(device, "arc_pgu ID# 0x%x, using the: %s\n",
 		ioread32(&par->regs->module_id), par->display->display_name);
 
-	par->fb_size = CONFIG_ARCPGU_RGBBUFS * arcpgufb_var.xres *
-		arcpgufb_var.yres * ((arcpgufb_var.bits_per_pixel + 7) >> 3);
+	par->fb_size = CONFIG_ARCPGU_RGBBUFS * par->display->hres *
+		       par->display->vres *
+		       ((arcpgufb_var.bits_per_pixel + 7) >> 3);
 	dev_dbg(device, "fb size:%x\n", par->fb_size);
 	par->fb = dma_alloc_coherent(device, PAGE_ALIGN(par->fb_size),
 				     &par->fb_phys, GFP_KERNEL);
@@ -441,6 +336,11 @@ static int arcpgufb_probe(struct platform_device *pdev)
 	
 	dev_dbg(device, "framebuffer at: 0x%x (logical), 0x%x (physical)\n",
 		par->fb, par->fb_phys);
+
+	arcpgufb_var.xres = par->display->hres;
+	arcpgufb_var.yres = par->display->vres;
+	arcpgufb_var.xres_virtual = par->display->hres;
+	arcpgufb_var.yres_virtual = par->display->vres;
 
 	/* encode_fix */
 	arcpgufb_fix.smem_start = par->fb_phys;
