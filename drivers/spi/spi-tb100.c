@@ -108,8 +108,8 @@ struct tb100_spi_hw_info {
 	uint8_t tx_af_level;
 	uint8_t tx_ae_level;
 	uint8_t rx_af_level;
-	/* pad */
-	uint8_t pad;
+	/* rx lli low limit */
+	uint8_t rx_lli_low_limit;
 };
 
 struct tb100_spi_lli_desc {
@@ -126,6 +126,10 @@ struct tb100_spi_lli_desc {
 
 struct tb100_spi_xfer {
 	struct spi_message *m;
+
+	uint32_t sa_addr;
+	uint32_t sa_len;
+	uint8_t bs[64];
 
 	/* xfer len */
 	uint32_t tx_len;
@@ -259,9 +263,6 @@ static void tb100_spi_xfer_start(struct tb100_pms_spi *dev)
 				SPI_REG_INTR_ENABLE);
 	}
 
-	// TODO
-	//tb100_spi_dump_registers(dev);
-
 	reg = tb100_spi_readl(dev, SPI_REG_CTRL1);
 	reg |= (SPI_STARTXFR | SPI_TSCD(2)) ;
 
@@ -375,6 +376,8 @@ static int tb100_spi_configure_dma_xfer(struct tb100_pms_spi *dev,
 	struct tb100_spi_lli_desc *lli;
 	int i;
 
+	x->sa_addr = x->sa_len = 0;
+
 	for_each_sg(x->sgt_tx.sgl, sg, x->sgt_tx_nelem, i) {
 		lli = tb100_spi_get_lli(dev);
 		if (!lli)
@@ -395,8 +398,20 @@ static int tb100_spi_configure_dma_xfer(struct tb100_pms_spi *dev,
 		if (!lli)
 			return -ENOMEM;
 
-		lli->dmastart = sg_dma_address(sg);
-		lli->dmactrl |= (sg_dma_len(sg) << 12);
+		/* detect last lli */
+		if ((i > 0) && (i == (x->sgt_rx_nelem - 1)) &&
+			(sg_dma_len(sg) < dev->hw_info.rx_lli_low_limit)) {
+
+			x->sa_addr = sg_dma_address(sg);
+			x->sa_len = sg_dma_len(sg);
+
+			lli->dmastart = (uint32_t) x->bs;
+			lli->dmactrl |= (sizeof(x->bs) << 12);
+			x->rx_len += (sizeof(x->bs) - x->sa_len);
+		} else {
+			lli->dmastart = sg_dma_address(sg);
+			lli->dmactrl |= (sg_dma_len(sg) << 12);
+		}
 
 		/* enqueue rx lli */
 		list_add_tail(&lli->node, &x->rx_queue);
@@ -507,6 +522,7 @@ static void setup_dma_scatter(struct tb100_pms_spi *dev, struct sg_table *sgt,
 		}
 	}
 
+	/* TODO */
 	if (bytesleft > 0) {
 		printk("%s: i = %d, mapped %d bytes from %p, bytes left: %d\n",
 				__func__, i , mapbytes, buf, bytesleft);
@@ -665,9 +681,13 @@ static irqreturn_t tb100_spi_interrupt(int irq, void *ctx)
 		x->m->status = 0;
 		x->m->actual_length = (x->rx_len + x->tx_len);
 
+		if (x->sa_addr != 0) {
+			x->m->actual_length -= (sizeof(x->bs) - x->sa_len);
+			memcpy((void *) x->sa_addr, &x->bs[0], x->sa_len);
+		}
+
 		dma_sync_sg_for_cpu(&dev->master->dev, x->sgt_rx.sgl,
 				x->sgt_rx_nelem, DMA_FROM_DEVICE);
-
 	}
 
 	/* unlock waiting process */
@@ -693,7 +713,9 @@ static int tb100_spi_transfer(struct spi_device *spi, struct spi_message *m)
 	struct tb100_pms_spi *dev = NULL;
 	struct tb100_spi_xfer *x = NULL;
 	struct spi_transfer *t = NULL;
+#if TB100_SPI_DEBUG
 	int i = 0;
+#endif
 
 	m->actual_length = 0;
 	m->status = -EINPROGRESS;
@@ -976,6 +998,9 @@ static int tb100_spi_probe(struct platform_device *pdev)
 	tspi->hw_info.tx_af_level =  ((reg >> 16) & 0xFF);
 	tspi->hw_info.tx_ae_level =  ((reg >> 8) & 0xFF);
 	tspi->hw_info.rx_af_level =  (reg & 0xFF);
+	/* compute low limit */
+	tspi->hw_info.rx_lli_low_limit = (tspi->hw_info.rx_ff_size) -
+		((tspi->hw_info.rx_af_level + 2) * 4);
 
 	pr_info("%s enabled @%p (ver: %d.%d.%d)\n", DRIVER_NAME,
 			tspi->iomem,
@@ -1028,8 +1053,6 @@ static int __exit tb100_spi_remove(struct platform_device *pdev)
 	struct spi_master *master;
 	struct resource *mem;
 
-	printk("%s: enter\n", __func__);
-
 	platform_set_drvdata(pdev, NULL);
 
 	/* clock release */
@@ -1057,7 +1080,6 @@ static int __exit tb100_spi_remove(struct platform_device *pdev)
 	dma_pool_destroy(dev->lli_pool);
 	kfree(dev);
 
-	printk("%s: exit\n", __func__);
 	return 0;
 }
 
