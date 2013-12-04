@@ -10,6 +10,7 @@ config ARC_PLAT_XPLORER
 	bool "Synopsys ARC Xplorer System"
 	select COMMON_CLK
 	select DW_APB_ICTL
+	select ARCH_WANT_OPTIONAL_GPIOLIB
 	help
 	  Support for the ARC Xplorer System.
 
