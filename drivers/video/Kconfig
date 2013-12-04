@@ -478,18 +478,23 @@ config FB_ARC
 	  GPIO IO address to be used for setting control and data.
 
 config FB_ARCPGU
-	bool "ARC PGU Framebuffer device for nSIM OSCI"
+	bool "Use Synopsys DW Pixel Graphics Unit"
 	depends on FB && ARC
 	default y
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
 	help
-	  Adds support for the System C frame buffer device in the nSIM
+	  OSCI:Adds support for the System C frame buffer device in the nSIM
 	  OSCI model. The System C frame buffer device is a simplified
 	  version of the DesignWare PGU 2; it does not support double
 	  and/or triple buffering yet for instance.
 	  It supports just one mode right now: 640x480x24.
+
+	  Select DW PGU2 which is an alternative for the regular ARC PGU
+	  This device includes generic software accelerated graphics
+	  Further more, it contains a double buffered framebuffer
+	  Be carefull, functionaly it is very much different from ARC PGU
 
 config FB_ATARI
 	bool "Atari native chipset support"
