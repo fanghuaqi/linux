@@ -160,22 +160,26 @@
 				adi,hsync-polarity = <0x02>;
 				adi,clock-delay = <0x03>;
 			};
+
 			rtc@0x6F {
 				compatible = "microchip,mcp7941x";
 				reg = <0x6F>;
 			};
+
 			eeprom@0x54{
 				compatible = "24c01";
 				reg = <0x54>;
 				pagesize = <0x8>;
 			};
+
 			eeprom@0x57{
 				compatible = "24c04";
 				reg = <0x57>;
 				pagesize = <0x8>;
 			};
 		};
-	gpio0:gpio@13000 {
+
+		gpio0:gpio@13000 {
 			compatible = "snps,dw-apb-gpio";
 			reg = <0x13000 0x1000>;
 			#address-cells = <1>;
@@ -188,7 +192,7 @@
 				nr-gpio = <32>;
 				bank-idx = <0>;
 			};
-			
+
 			gpio0_bankb: gpio-controller@1 {
 				compatible = "snps,dw-apb-gpio-bank";
 				gpio-controller;
@@ -196,7 +200,7 @@
 				nr-gpio = <8>;
 				bank-idx = <1>;
 			};
-			
+
 			gpio0_bankc: gpio-controller@2 {
 				compatible = "snps,dw-apb-gpio-bank";
 				gpio-controller;
@@ -205,7 +209,8 @@
 				bank-idx = <2>;
 			};
 		};
-	gpio1:gpio@14000 {
+
+		gpio1:gpio@14000 {
 			compatible = "snps,dw-apb-gpio";
 			reg = <0x14000 0x1000>;
 			#address-cells = <1>;
@@ -218,7 +223,7 @@
 				nr-gpio = <30>;
 				bank-idx = <0>;
 			};
-			
+
 			gpio1_bankb: gpio-controller@1 {
 				compatible = "snps,dw-apb-gpio-bank";
 				gpio-controller;
@@ -226,7 +231,7 @@
 				nr-gpio = <10>;
 				bank-idx = <1>;
 			};
-			
+
 			gpio1_bankc: gpio-controller@2 {
 				compatible = "snps,dw-apb-gpio-bank";
 				gpio-controller;
@@ -234,12 +239,13 @@
 				nr-gpio = <8>;
 				bank-idx = <2>;
 			};
+		};
+
 		pgu@0x17000 {
 			compatible = "snps,arcpgufb";
 			reg = <0x17000 0x400>;
 			clock-frequency = <51000000>; /* PGU'clock is initated in init function */
 			interrupts = <5>;
 		};
-
 	};
 };
