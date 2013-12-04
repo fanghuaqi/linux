@@ -353,11 +353,7 @@ static int dwapb_gpio_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
-		dev_err(&pdev->dev, "failed to get iomem\n");
-		return -ENXIO;
-	}
-	gpio->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+	gpio->regs = devm_request_and_ioremap(&pdev->dev, res);
 	if (!gpio->regs)
 		return -ENOMEM;
 
@@ -386,7 +382,7 @@ static struct platform_driver dwapb_gpio_driver = {
 	.driver		= {
 		.name	= "gpio-dwapb",
 		.owner	= THIS_MODULE,
-		.of_match_table = dwapb_of_match_table,
+		.of_match_table = of_match_ptr(dwapb_of_match_table),
 	},
 	.probe		= dwapb_gpio_probe,
 };
