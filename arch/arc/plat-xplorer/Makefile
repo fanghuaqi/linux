@@ -7,3 +7,4 @@
 #
 
 obj-$(CONFIG_XPLORER_CPUTILE_770) += xplorer770.o
+obj-$(CONFIG_XPLORER_ADV7511) += adv7511_core.o

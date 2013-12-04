@@ -30,4 +30,13 @@ config XPLORER_CPUTILE_770
 	  System mainboard with this daughtercard. Please use the
 	  xplorer_system_770.dts device tree with this configuration.
 
+config XPLORER_ADV7511
+	bool "ADI ADV7511"
+	depends on FB_ARCPGU && I2C
+	default y
+	select REGMAP_I2C
+	select HDMI
+	help 
+	  This adds support for ADV7511 HDMI transmitter.
+
 endif
