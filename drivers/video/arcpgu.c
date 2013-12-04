@@ -2,11 +2,12 @@
  * Copyright (C) 2013 Synopsys, Inc. (www.synopsys.com)
  *
  *   Mischa Jonker <mjonker@synopsys.com>
+ *   Wayne Ren <wren@synopsys.com>
  *
  *   arcpgu.c
  *
- *  Simple fb driver with hardcoded 640x480x24 resolution
- *  can be used with nSIM OSCI model
+ *  Frame buffer driver for the ARC pixel graphics unit, featured in
+ *  the nSIM OSCI model and the ARC Xplorer System.
  *
  *  based on: linux/drivers/video/skeletonfb.c
  *
@@ -24,9 +25,7 @@
 #include <linux/delay.h>
 #include <linux/fb.h>
 #include <linux/init.h>
-#define DEBUG
 #include <linux/platform_device.h>
-#undef DEBUG
 #include <linux/dma-mapping.h>
 #include <linux/of.h>
 
