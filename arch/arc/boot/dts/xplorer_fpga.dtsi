@@ -164,6 +164,16 @@
 				compatible = "microchip,mcp7941x";
 				reg = <0x6F>;
 			};
+			eeprom@0x54{
+				compatible = "24c01";
+				reg = <0x54>;
+				pagesize = <0x8>;
+			};
+			eeprom@0x57{
+				compatible = "24c04";
+				reg = <0x57>;
+				pagesize = <0x8>;
+			};
 		};
 		pgu@0x17000 {
 			compatible = "snps,arcpgufb";
