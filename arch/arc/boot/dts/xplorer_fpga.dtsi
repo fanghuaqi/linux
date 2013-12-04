@@ -137,26 +137,28 @@
 			clock-frequency = <400000>;
 			clocks = <&i2cclk>;
 			interrupts = <16>;
-			
+
 			adv7511@0x39 {
-            	compatible = "adi,adv7511";
-                reg = <0x39>;
+				compatible = "adi,adv7511";
+				reg = <0x39>;
 				interrupts = <23>;
-/* note: for reverse-bitorder and tmds-clock-inversion, of_property_read_bool
+/*
+ * Note: for reverse-bitorder and tmds-clock-inversion, of_property_read_bool
  * is used. This function returns true if the property is defined, even if
- * the value is 0!! */
-/*				adi,reverse-bitorder = <0x00>;*/
-/*               	adi,tdms-clock-inversion = <0x00>; */
-                adi,input-id = <0x00>;
-                adi,input-style = <0x00>;
-               	adi,bit-justification = <0x00>;
-               	adi,input-color-depth = <0x3>;
-                adi,sync-pulse = <0x00>;
-               	adi,up-conversion = <0x00>;
-               	adi,timing-generation-sequence = <0x00>;
-                adi,vsync-polarity = <0x02>;
-               	adi,hsync-polarity = <0x02>;
-                adi,clock-delay = <0x03>;
+ * the value is 0!! Therefore, we do not add them here.
+ * adi,reverse-bitorder = <0x00>;
+ * adi,tdms-clock-inversion = <0x00>;
+ */
+				adi,input-id = <0x00>;
+				adi,input-style = <0x00>;
+				adi,bit-justification = <0x00>;
+				adi,input-color-depth = <0x3>;
+				adi,sync-pulse = <0x00>;
+				adi,up-conversion = <0x00>;
+				adi,timing-generation-sequence = <0x00>;
+				adi,vsync-polarity = <0x02>;
+				adi,hsync-polarity = <0x02>;
+				adi,clock-delay = <0x03>;
 			};
 		};
 		pgu@0x17000 {
