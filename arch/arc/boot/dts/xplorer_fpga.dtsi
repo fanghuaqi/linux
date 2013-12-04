@@ -160,6 +160,10 @@
 				adi,hsync-polarity = <0x02>;
 				adi,clock-delay = <0x03>;
 			};
+			rtc@0x6F {
+				compatible = "microchip,mcp7941x";
+				reg = <0x6F>;
+			};
 		};
 		pgu@0x17000 {
 			compatible = "snps,arcpgufb";
