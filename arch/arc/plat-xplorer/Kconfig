@@ -30,6 +30,16 @@ config XPLORER_CPUTILE_770
 	  System mainboard with this daughtercard. Please use the
 	  xplorer_system_770.dts device tree with this configuration.
 
+config ARCPGU_RGBBUFS
+	int 'Number of RGB Buffers'
+	default 1
+	depends on FB_ARCPGU
+
+config ARCPGU_DISPTYPE
+	int 'Display selector (0 - VGA, 1 - QVGA, 2-HDMI(ADV7511))'
+	default 2
+	depends on FB_ARCPGU
+
 config XPLORER_ADV7511
 	bool "ADI ADV7511"
 	depends on FB_ARCPGU && I2C

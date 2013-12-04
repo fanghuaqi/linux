@@ -159,6 +159,12 @@
                 adi,clock-delay = <0x03>;
 			};
 		};
+		pgu@0x17000 {
+			compatible = "snps,arcpgufb";
+			reg = <0x17000 0x400>;
+			clock-frequency = <51000000>; /* PGU'clock is initated in init function */
+			interrupts = <5>;
+		};
 
 	};
 };

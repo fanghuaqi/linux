@@ -162,6 +162,24 @@ static void xplorer770_early_init(void)
 
 	/* map GPIO 14:10 to ARC 9:5 (IRQ mux change for rev 2 boards) */
 	iowrite32(0x52, (void __iomem *) CPUTILE_CREG + 0x114);
+
+	/* set tunnel priority to slave, for PGU */
+	/* iowrite32(0x02, (void __iomem *) CPUTILE_CREG + 0x140); */
+	
+	/* for 1024*768@60 Hz VESA, OFREQ = 130 Mhz (65 MHz), (13+13)*25/(2+3) */
+	/* set clock for PGU, base clk:25 Mhz */
+	iowrite32(0x2000, (void __iomem *) 0xe0010080);
+	while ((ioread32((void __iomem *) 0xe0010110) & 1));  /* FIXME: add timeout mechanism */
+	while (!(ioread32((void __iomem *) 0xe0010110) & 1));  /* FIXME: add timeout mechanism */
+	/* pass PLL_IDIV, input clk:25 Mhz */
+	iowrite32((25 << 6) | 26 , (void __iomem *) 0xe0010084);
+	while ((ioread32((void __iomem *) 0xe0010110) & 1));  /* FIXME: add timeout mechanism */
+	while (!(ioread32((void __iomem *) 0xe0010110) & 1));  /* FIXME: add timeout mechanism */
+	/* VCOFREQ = 25Mhz * (25 + 26) */
+	iowrite32((12 << 6 ) | 13, (void __iomem *) 0xe0010088);
+	while ((ioread32((void __iomem *) 0xe0010110) & 1));  /* FIXME: add timeout mechanism */
+	while (!(ioread32((void __iomem *) 0xe0010110) & 1));  /* FIXME: add timeout mechanism */
+	/* OFREQ = VCOFREQ / (13 + 12) = 51 Mhz */
 }
 
 static void xplorer770_plat_init(void)

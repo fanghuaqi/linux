@@ -16,6 +16,6 @@
 	compatible = "snps,xplorer770";
 
 	chosen {
-		bootargs = "console=ttyS3,115200n8";
+		bootargs = "console=tty0 console=ttyS3,115200n8 loglevel=8";
 	};
 };
