@@ -113,6 +113,58 @@
 			reg-io-width = <4>;
 		};
 
+		spi@0x00000 {
+			compatible = "snps, dw-apb-spi";
+			reg = <0x00000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&apbclk>;
+			interrupts = <10>;
+			bus-num = <0>;
+			num-cs = <1>;
+			max-freq = <50000000>;
+
+			flash: n25q512a@0 {
+				compatible = "micron,n25q512a";
+ 				#address-cells = <1>;
+				#size-cells = <1>;
+				reg = <0>;
+				spi-cpha;
+				spi-cpol;
+				spi-max-frequency = <25000000>;
+			};
+		};
+
+		spi@0x1a000 {
+			compatible = "snps, dw-apb-spi";
+			reg = <0x1a000 0x1000>;
+			clocks = <&apbclk>;
+			interrupts = <11>;
+			bus-num = <1>;
+			num-cs = <1>;
+			max-freq = <50000000>;
+		};
+		
+		spi@0x1b000 {
+			compatible = "snps, dw-apb-spi";
+			reg = <0x1b000 0x1000>;
+			clocks = <&apbclk>;
+			interrupts = <12>;
+			bus-num = <2>;
+			num-cs = <1>;
+			max-freq = <50000000>;
+		};
+
+		spi@0x1c000 {
+			compatible = "snps, dw-apb-spi";
+			reg = <0x1c000 0x1000>;
+			clocks = <&apbclk>;
+			interrupts = <13>;
+			bus-num = <3>;
+			num-cs = <1>;
+			max-freq = <50000000>;
+		};
+
 		i2c@0x1d000 {
 			compatible = "snps,designware-i2c";
 			reg = <0x1d000 0x100>;

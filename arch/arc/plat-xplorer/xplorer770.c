@@ -179,6 +179,8 @@ static void xplorer770_early_init(void)
 	/* FPGA mux interrupts to GPIO7) */
 	iowrite32(0x01, (void __iomem *) FPGA_CREG + 0x214);
 
+	/* always enable spi flash */
+	iowrite32(0x01, (void __iomem *) FPGA_CREG + 0x218);
 	/* reset ethernet and ULPI interfaces */
 	iowrite32(0x18, (void __iomem *) FPGA_CREG + 0x220);
 
