@@ -161,7 +161,7 @@ static inline u32 tx_max(struct dw_spi *dws)
 	u32 tx_left, tx_room, rxtx_gap;
 
 	tx_left = (dws->tx_end - dws->tx) / dws->n_bytes;
-	tx_room = dws->fifo_len - dw_readw(dws, DW_SPI_TXFLR);
+	tx_room = dws->fifo_len - dw_readl(dws, DW_SPI_TXFLR);
 
 	/*
 	 * Another concern is about the tx/rx mismatch, we
@@ -182,7 +182,7 @@ static inline u32 rx_max(struct dw_spi *dws)
 {
 	u32 rx_left = (dws->rx_end - dws->rx) / dws->n_bytes;
 
-	return min(rx_left, (u32)dw_readw(dws, DW_SPI_RXFLR));
+	return min(rx_left, (u32)dw_readl(dws, DW_SPI_RXFLR));
 }
 
 static void dw_writer(struct dw_spi *dws)
@@ -198,7 +198,7 @@ static void dw_writer(struct dw_spi *dws)
 			else
 				txw = *(u16 *)(dws->tx);
 		}
-		dw_writew(dws, DW_SPI_DR, txw);
+		dw_writel(dws, DW_SPI_DR, txw);
 		dws->tx += dws->n_bytes;
 	}
 }
@@ -209,7 +209,7 @@ static void dw_reader(struct dw_spi *dws)
 	u16 rxw;
 
 	while (max--) {
-		rxw = dw_readw(dws, DW_SPI_DR);
+		rxw = dw_readl(dws, DW_SPI_DR);
 		/* Care rx only if the transfer's original "rx" is not null */
 		if (dws->rx_end - dws->len) {
 			if (dws->n_bytes == 1)
@@ -317,13 +317,13 @@ EXPORT_SYMBOL_GPL(dw_spi_xfer_done);
 
 static irqreturn_t interrupt_transfer(struct dw_spi *dws)
 {
-	u16 irq_status = dw_readw(dws, DW_SPI_ISR);
+	u16 irq_status = dw_readl(dws, DW_SPI_ISR);
 
 	/* Error handling */
 	if (irq_status & (SPI_INT_TXOI | SPI_INT_RXOI | SPI_INT_RXUI)) {
-		dw_readw(dws, DW_SPI_TXOICR);
-		dw_readw(dws, DW_SPI_RXOICR);
-		dw_readw(dws, DW_SPI_RXUICR);
+		dw_readl(dws, DW_SPI_TXOICR);
+		dw_readl(dws, DW_SPI_RXOICR);
+		dw_readl(dws, DW_SPI_RXUICR);
 		int_error_stop(dws, "interrupt_transfer: fifo overrun/underrun");
 		return IRQ_HANDLED;
 	}
@@ -347,7 +347,7 @@ static irqreturn_t interrupt_transfer(struct dw_spi *dws)
 static irqreturn_t dw_spi_irq(int irq, void *dev_id)
 {
 	struct dw_spi *dws = dev_id;
-	u16 irq_status = dw_readw(dws, DW_SPI_ISR) & 0x3f;
+	u16 irq_status = dw_readl(dws, DW_SPI_ISR) & 0x3f;
 
 	if (!irq_status)
 		return IRQ_NONE;
@@ -503,11 +503,11 @@ static void pump_transfers(unsigned long data)
 	 *	2. clk_div is changed
 	 *	3. control value changes
 	 */
-	if (dw_readw(dws, DW_SPI_CTRL0) != cr0 || cs_change || clk_div || imask) {
+	if (dw_readl(dws, DW_SPI_CTRL0) != cr0 || cs_change || clk_div || imask) {
 		spi_enable_chip(dws, 0);
 
-		if (dw_readw(dws, DW_SPI_CTRL0) != cr0)
-			dw_writew(dws, DW_SPI_CTRL0, cr0);
+		if (dw_readl(dws, DW_SPI_CTRL0) != cr0)
+			dw_writel(dws, DW_SPI_CTRL0, cr0);
 
 		spi_set_clk(dws, clk_div ? clk_div : chip->clk_div);
 		spi_chip_sel(dws, spi->chip_select);
@@ -517,13 +517,13 @@ static void pump_transfers(unsigned long data)
 		if (imask)
 			spi_umask_intr(dws, imask);
 		if (txint_level)
-			dw_writew(dws, DW_SPI_TXFLTR, txint_level);
+			dw_writel(dws, DW_SPI_TXFLTR, txint_level);
 
 		spi_enable_chip(dws, 1);
 		if (cs_change)
 			dws->prev_chip = chip;
 	}
-
+	
 	if (dws->dma_mapped)
 		dws->dma_ops->dma_transfer(dws, cs_change);
 
@@ -755,6 +755,7 @@ static int destroy_queue(struct dw_spi *dws)
 /* Restart the controller, disable all interrupts, clean rx fifo */
 static void spi_hw_init(struct dw_spi *dws)
 {
+	
 	spi_enable_chip(dws, 0);
 	spi_mask_intr(dws, 0xff);
 	spi_enable_chip(dws, 1);
@@ -766,14 +767,15 @@ static void spi_hw_init(struct dw_spi *dws)
 	if (!dws->fifo_len) {
 		u32 fifo;
 		for (fifo = 2; fifo <= 257; fifo++) {
-			dw_writew(dws, DW_SPI_TXFLTR, fifo);
-			if (fifo != dw_readw(dws, DW_SPI_TXFLTR))
+			dw_writel(dws, DW_SPI_TXFLTR, fifo);
+			if (fifo != dw_readl(dws, DW_SPI_TXFLTR))
 				break;
 		}
 
 		dws->fifo_len = (fifo == 257) ? 0 : fifo;
-		dw_writew(dws, DW_SPI_TXFLTR, 0);
+		dw_writel(dws, DW_SPI_TXFLTR, 0);
 	}
+	
 }
 
 int dw_spi_add_host(struct dw_spi *dws)
@@ -782,7 +784,7 @@ int dw_spi_add_host(struct dw_spi *dws)
 	int ret;
 
 	BUG_ON(dws == NULL);
-
+	
 	master = spi_alloc_master(dws->parent_dev, 0);
 	if (!master) {
 		ret = -ENOMEM;
@@ -811,10 +813,11 @@ int dw_spi_add_host(struct dw_spi *dws)
 	master->cleanup = dw_spi_cleanup;
 	master->setup = dw_spi_setup;
 	master->transfer = dw_spi_transfer;
+	master->dev.of_node = dws->parent_dev->of_node;
 
 	/* Basic HW init */
 	spi_hw_init(dws);
-
+	
 	if (dws->dma_ops && dws->dma_ops->dma_init) {
 		ret = dws->dma_ops->dma_init(dws);
 		if (ret) {
