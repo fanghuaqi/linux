@@ -11,7 +11,7 @@
 
 / {
 	compatible = "snps,arc-angel4";
-	clock-frequency = <80000000>;	/* 80 MHZ */
+	clock-frequency = <70000000>;	/* 80 MHZ */
 	#address-cells = <1>;
 	#size-cells = <1>;
 	interrupt-parent = <&intc>;
@@ -47,7 +47,7 @@
 			compatible = "snps,arc-uart";
 			reg = <0xc0fc1000 0x100>;
 			interrupts = <5>;
-			clock-frequency = <80000000>;
+			clock-frequency = <70000000>;
 			current-speed = <115200>;
 			status = "okay";
 		};
@@ -56,15 +56,15 @@
 			compatible = "snps,arc-emac";
 			reg = <0xc0fc2000 0x3c>;
 			interrupts = <6>;
-			mac-address = [ 00 11 22 33 44 55 ];
-			clock-frequency = <80000000>;
-			max-speed = <100>;
+			mac-address = [ 80 11 22 33 44 55 ];
+			clock-frequency = <70000000>;
+			max-speed = <10>;
 			phy = <&phy0>;
 
 			#address-cells = <1>;
 			#size-cells = <0>;
 			phy0: ethernet-phy@0 {
-				reg = <1>;
+				reg = <7>;
 			};
 		};
 
